@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>微信支付</title>
+</head>
+<body>
+    <h1>请选择支付金额</h1>
+    <button onclick="pay(3)">3元</button>
+    <button onclick="pay(5)">5元</button>
+    <button onclick="pay(10)">10元</button>
+    <div id="qrcode"></div>
+    <script src="https://cdn.bootcdn.net/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+    <script src="https://cdn.bootcdn.net/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <script>
+        function pay(amount) {
+            $.post("/pay", { amount: amount }, function (data) {
+                if (data.status === "success") {
+                    var qrcode = new QRCode("qrcode", {
+                        text: data.pay_url,
+                        width: 200,
+                        height: 200,
+                    });
+            } else {
+                alert("支付请求失败: " + data.message);
+            }
+        });
+    }
+
+    // 监听支付结果
+    function listenForPayment() {
+        var timer = setInterval(function () {
+            $.get("/notify", function (data) {
+                if (data.status === "success") {
+                    clearInterval(timer);
+                    alert("支付成功! 随机码: " + data.random_code);
+                } else if (data.status === "error") {
+                    clearInterval(timer);
+                    alert("支付失败: " + data.message);
+                }
+            });
+        }, 3000);
+    }
+
+    // 初始化
+    $(function () {
+        listenForPayment();
+    });
+</script>
+</body>
+</html>
